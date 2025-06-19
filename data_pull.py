@@ -5,8 +5,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
-import matplotlib.pyplot as plt
-import seaborn as sns
+import plotly.express as px
 import io
 
 # Page config
@@ -91,17 +90,20 @@ X_pca = pca.fit_transform(X_scaled)
 kmeans = KMeans(n_clusters=n_clusters, random_state=42)
 labels = kmeans.fit_predict(X_scaled)
 
-fig, ax = plt.subplots(figsize=(12, 7))
-sns.scatterplot(x=X_pca[:, 0], y=X_pca[:, 1], hue=labels, palette='Set2', s=100, ax=ax)
+# Interactive cluster scatter plot using Plotly
+pca_df = pd.DataFrame(X_pca, columns=['PCA1', 'PCA2'], index=X.index)
+pca_df['Cluster'] = labels
+pca_df['Ticker'] = pca_df.index.str.replace('.NS', '', regex=False)
 
-for i, ticker in enumerate(X.index):
-    ax.text(X_pca[i, 0]+0.01, X_pca[i, 1], ticker.replace('.NS', ''), fontsize=8)
-
-ax.set_title("NSE Stock Clusters")
-ax.set_xlabel("PCA Component 1")
-ax.set_ylabel("PCA Component 2")
-ax.grid(True)
-st.pyplot(fig)
+fig = px.scatter(
+    pca_df,
+    x='PCA1', y='PCA2',
+    color='Cluster',
+    hover_data=['Ticker'],
+    title='📊 Interactive NSE Stock Clusters',
+    color_continuous_scale='Set2'
+)
+st.plotly_chart(fig, use_container_width=True)
 
 # Cluster-level summary
 st.subheader("📈 Cluster Averages: Return, Volatility & Count")
@@ -127,16 +129,16 @@ summary_style = summary.style.apply(highlight_best, axis=1)
 st.dataframe(summary_style)
 
 # Scatter plot of cluster means
-fig2, ax2 = plt.subplots()
-ax2.scatter(summary['Volatility'], summary['Mean Return'], c=summary.index, cmap='Set2', s=120)
-for i in summary.index:
-    label = f"🏆 Cluster {i}" if i == best_cluster else f"Cluster {i}"
-    ax2.text(summary.loc[i, 'Volatility']+0.0005, summary.loc[i, 'Mean Return'], label, fontsize=9)
-ax2.set_xlabel("Volatility")
-ax2.set_ylabel("Mean Return")
-ax2.set_title("📊 Cluster Centers: Mean Return vs. Volatility")
-ax2.grid(True)
-st.pyplot(fig2)
+fig2 = px.scatter(
+    summary.reset_index(),
+    x='Volatility', y='Mean Return',
+    size='Count', color='Cluster',
+    text='Cluster',
+    title='📊 Cluster Centers: Mean Return vs. Volatility'
+)
+fig2.update_traces(textposition='top center')
+fig2.update_layout(xaxis_title='Volatility', yaxis_title='Mean Return')
+st.plotly_chart(fig2, use_container_width=True)
 
 # CSV download
 csv_buffer = io.StringIO()
