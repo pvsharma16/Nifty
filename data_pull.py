@@ -14,35 +14,62 @@ st.title("📊 Nifty 50 Stock Clustering Dashboard")
 
 # Updated Nifty 50 ticker list (verified on Yahoo Finance)
 nifty50_tickers = [
-    'RELIANCE.NS', 'TCS.NS'
+    'RELIANCE.NS', 'TCS.NS', 'INFY.NS', 'HDFCBANK.NS', 'ICICIBANK.NS',
+    'LT.NS', 'SBIN.NS', 'HINDUNILVR.NS', 'ITC.NS', 'BHARTIARTL.NS',
+    'ASIANPAINT.NS', 'AXISBANK.NS', 'KOTAKBANK.NS', 'SUNPHARMA.NS',
+    'MARUTI.NS', 'WIPRO.NS', 'HCLTECH.NS', 'NESTLEIND.NS', 'TECHM.NS',
+    'ULTRACEMCO.NS', 'TITAN.NS', 'NTPC.NS', 'ONGC.NS', 'JSWSTEEL.NS',
+    'COALINDIA.NS', 'POWERGRID.NS', 'BAJFINANCE.NS', 'BAJAJFINSV.NS',
+    'ADANIENT.NS', 'ADANIPORTS.NS', 'HDFCLIFE.NS', 'HEROMOTOCO.NS',
+    'CIPLA.NS', 'EICHERMOT.NS', 'GRASIM.NS', 'INDUSINDBK.NS',
+    'TATAMOTORS.NS', 'TATASTEEL.NS', 'DRREDDY.NS', 'SBILIFE.NS',
+    'M&M.NS', 'BAJAJ-AUTO.NS', 'HINDALCO.NS', 'APOLLOHOSP.NS',
+    'DABUR.NS', 'PIDILITIND.NS', 'HAVELLS.NS', 'ICICIGI.NS',
+    'CHOLAFIN.NS', 'TRENT.NS'
 ]
 
 # Sidebar controls
 st.sidebar.header("Settings")
 n_clusters = st.sidebar.slider("Number of Clusters", min_value=2, max_value=8, value=4)
-date_range = st.sidebar.date_input("Select Date Range", ["2025-05-10", "2025-06-18"])
+date_range = st.sidebar.date_input("Select Date Range", ["2024-06-01", "2025-06-01"])
 
-# Download data
-raw_data = yf.download(nifty50_tickers, start=date_range[0], end=date_range[1])
+# Download data with diagnostics
+with st.spinner("Fetching data from Yahoo Finance..."):
+    try:
+        raw_data = yf.download(
+            tickers=nifty50_tickers,
+            start=date_range[0],
+            end=date_range[1],
+            group_by='ticker',
+            auto_adjust=True,
+            threads=True
+        )
+        # Extract adjusted close prices manually
+        adj_close = pd.DataFrame({
+            ticker: raw_data[ticker]['Close']
+            for ticker in nifty50_tickers
+            if ticker in raw_data and 'Close' in raw_data[ticker]
+        })
+        st.write("Sample of fetched Adjusted Close data:", adj_close.head(3))
+    except Exception as e:
+        st.error(f"❌ Error while downloading data: {e}")
+        st.stop()
 
-# Check if 'Adj Close' exists
-#if 'Adj Close' not in raw_data.columns:
-#    st.error("Failed to retrieve valid stock data. Please try again or adjust the date range.")
-#    st.stop()
-
-data = raw_data #['Adj Close']
+# Check if any data was fetched
+if adj_close.empty:
+    st.error("No data could be retrieved for the selected date range. Try a broader range or different tickers.")
+    st.stop()
 
 # Log fetched and missing tickers
-valid_tickers = data.columns.tolist()
+valid_tickers = adj_close.columns.tolist()
 missing = [t for t in nifty50_tickers if t not in valid_tickers]
-
 if missing:
-    st.warning(f"Warning: Could not fetch data for these tickers: {', '.join(missing)}")
+    st.warning(f"⚠️ Could not fetch data for: {', '.join(missing)}")
 #if valid_tickers:
 #    st.success(f"✅ Data successfully fetched for: {', '.join([t.replace('.NS', '') for t in valid_tickers])}")
 
 # Calculate returns and clean
-returns = data.pct_change()
+returns = adj_close.pct_change()
 returns_clean = returns.replace([np.inf, -np.inf], np.nan).dropna(axis=1, how='any').dropna(axis=0, how='any')
 X = returns_clean.T
 
@@ -76,4 +103,4 @@ st.pyplot(fig)
 # Show raw data option
 if st.sidebar.checkbox("Show Raw Returns Data"):
     st.subheader("Daily Returns")
-    st.dataframe(returns_clean.T.round(4))
+    st.dat
