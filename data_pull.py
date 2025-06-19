@@ -14,17 +14,15 @@ st.title("📊 Nifty 50 Stock Clustering Dashboard")
 
 # Nifty 50 symbols (Yahoo Finance format)
 nifty50_tickers = [
-    'RELIANCE.NS', 'TCS.NS', 'INFY.NS', 'HDFCBANK.NS', 'ICICIBANK.NS',
-    'LT.NS', 'SBIN.NS', 'HINDUNILVR.NS', 'ITC.NS', 'BHARTIARTL.NS',
-    'ASIANPAINT.NS', 'AXISBANK.NS', 'KOTAKBANK.NS', 'SUNPHARMA.NS',
-    'MARUTI.NS', 'WIPRO.NS', 'HCLTECH.NS', 'NESTLEIND.NS', 'TECHM.NS',
-    'ULTRACEMCO.NS', 'TITAN.NS', 'NTPC.NS', 'ONGC.NS', 'JSWSTEEL.NS',
-    'COALINDIA.NS', 'POWERGRID.NS', 'BAJFINANCE.NS', 'BAJAJFINSV.NS',
-    'ADANIENT.NS', 'ADANIPORTS.NS', 'HDFCLIFE.NS', 'HEROMOTOCO.NS',
-    'BRITANNIA.NS', 'CIPLA.NS', 'DIVISLAB.NS', 'EICHERMOT.NS', 'BPCL.NS',
-    'GRASIM.NS', 'INDUSINDBK.NS', 'TATAMOTORS.NS', 'TATASTEEL.NS',
-    'DRREDDY.NS', 'UPL.NS', 'SHREECEM.NS', 'SBILIFE.NS', 'M&M.NS',
-    'BAJAJ-AUTO.NS', 'HINDALCO.NS', 'ICICIPRULI.NS', 'APOLLOHOSP.NS'
+    'ADANIENT.NS', 'ADANIPORTS.NS', 'APOLLOHOSP.NS', 'ASIANPAINT.NS', 'AXISBANK.NS',
+     'BAJAJ-AUTO.NS', 'BAJAJFINSV.NS', 'BAJFINANCE.NS', 'BEL.NS', 'BHARTIARTL.NS', 
+     'CIPLA.NS', 'COALINDIA.NS', 'DRREDDY.NS', 'EICHERMOT.NS', 'ETERNAL.NS', 
+     'GRASIM.NS', 'HCLTECH.NS', 'HDFCBANK.NS', 'HDFCLIFE.NS', 'HEROMOTOCO.NS', 
+     'HINDALCO.NS', 'HINDUNILVR.NS', 'ICICIBANK.NS', 'INDUSINDBK.NS', 'INFY.NS', 
+     'ITC.NS', 'JIOFIN.NS', 'JSWSTEEL.NS', 'KOTAKBANK.NS', 'LT.NS', 'M&M.NS', 'MARUTI.NS', 
+     'NESTLEIND.NS', 'NTPC.NS', 'ONGC.NS', 'POWERGRID.NS', 'RELIANCE.NS', 'SBILIFE.NS', 
+     'SBIN.NS', 'SHRIRAMFIN.NS', 'SUNPHARMA.NS', 'TATACONSUM.NS', 'TATAMOTORS.NS', 
+     'TATASTEEL.NS', 'TCS.NS', 'TECHM.NS', 'TITAN.NS', 'TRENT.NS', 'ULTRACEMCO.NS', 'WIPRO.NS'
 ]
 
 # Sidebar controls
@@ -33,13 +31,24 @@ n_clusters = st.sidebar.slider("Number of Clusters", min_value=2, max_value=8, v
 date_range = st.sidebar.date_input("Select Date Range", ["2024-06-01", "2025-06-01"])
 
 # Download data
-data = yf.download(nifty50_tickers, start=date_range[0], end=date_range[1])['Adj Close']
-returns = data.pct_change()
+raw_data = yf.download(nifty50_tickers, start=date_range[0], end=date_range[1])
 
-# Clean data: remove inf and NaN
+# Check if 'Adj Close' exists
+if 'Adj Close' not in raw_data.columns:
+    st.error("Failed to retrieve valid stock data. Please try again or adjust the date range.")
+    st.stop()
+
+#data = raw_data['Adj Close']
+
+# Log missing tickers
+valid_tickers = raw_data.columns.tolist()
+missing = [t for t in nifty50_tickers if t not in valid_tickers]
+if missing:
+    st.warning(f"Warning: Could not fetch data for these tickers: {', '.join(missing)}")
+
+# Calculate returns and clean
+returns = raw_data.pct_change()
 returns_clean = returns.replace([np.inf, -np.inf], np.nan).dropna(axis=1, how='any').dropna(axis=0, how='any')
-
-# Transpose for clustering
 X = returns_clean.T
 
 # Check if enough data is available
