@@ -34,7 +34,7 @@ n_clusters = st.sidebar.slider("Number of Clusters", min_value=2, max_value=8, v
 date_range = st.sidebar.date_input("Select Date Range", ["2024-06-01", "2025-06-01"])
 
 # Download data
-raw_data = yf.download('TRENT.NS', start=date_range[0], end=date_range[1])
+raw_data = yf.download('TRENT.NS' & 'ICICIGI.NS', start=date_range[0], end=date_range[1])
 
 # Check if 'Adj Close' exists
 #if 'Adj Close' not in raw_data.columns:
