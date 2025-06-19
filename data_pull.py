@@ -44,7 +44,6 @@ with st.spinner("Fetching data from Yahoo Finance..."):
             auto_adjust=True,
             threads=True
         )
-        # Extract adjusted close prices manually
         adj_close = pd.DataFrame({
             ticker: raw_data[ticker]['Close']
             for ticker in nifty50_tickers
@@ -55,12 +54,10 @@ with st.spinner("Fetching data from Yahoo Finance..."):
         st.error(f"❌ Error while downloading data: {e}")
         st.stop()
 
-# Check if any data was fetched
 if adj_close.empty:
     st.error("No data could be retrieved for the selected date range. Try a broader range or different tickers.")
     st.stop()
 
-# Log fetched and missing tickers
 valid_tickers = adj_close.columns.tolist()
 missing = [t for t in nifty50_tickers if t not in valid_tickers]
 if missing:
@@ -68,15 +65,12 @@ if missing:
 if valid_tickers:
     st.success(f"✅ Data successfully fetched for: {', '.join([t.replace('.NS', '') for t in valid_tickers])}")
 
-# Calculate returns and clean
 returns = adj_close.pct_change()
 returns_clean = returns.replace([np.inf, -np.inf], np.nan).fillna(method='ffill').fillna(method='bfill')
 X = returns_clean.T
 
-# Show how many valid stocks are available
 st.info(f"✅ {X.shape[0]} out of {len(nifty50_tickers)} stocks have usable return data.")
 
-# Check if enough data is available
 if X.shape[0] <= n_clusters:
     st.warning(
         f"Only {X.shape[0]} clean stocks available, which is less than or equal to the number of clusters ({n_clusters})."
@@ -84,7 +78,6 @@ if X.shape[0] <= n_clusters:
     st.info("Try reducing the number of clusters or extending the date range.")
     st.stop()
 
-# Preprocessing
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 pca = PCA(n_components=2)
@@ -92,11 +85,9 @@ X_pca = pca.fit_transform(X_scaled)
 kmeans = KMeans(n_clusters=n_clusters, random_state=42)
 labels = kmeans.fit_predict(X_scaled)
 
-# Visualization
 fig, ax = plt.subplots(figsize=(12, 7))
 sns.scatterplot(x=X_pca[:, 0], y=X_pca[:, 1], hue=labels, palette='Set2', s=100, ax=ax)
 
-# Annotate points
 for i, ticker in enumerate(X.index):
     ax.text(X_pca[i, 0]+0.01, X_pca[i, 1], ticker.replace('.NS', ''), fontsize=8)
 
@@ -105,6 +96,16 @@ ax.set_xlabel("PCA Component 1")
 ax.set_ylabel("PCA Component 2")
 ax.grid(True)
 st.pyplot(fig)
+
+# Cluster-level mean return and volatility
+st.subheader("📈 Cluster Averages: Return & Volatility")
+X_df = pd.DataFrame(X_scaled, index=X.index)
+X_df['Cluster'] = labels
+X_df['Mean Return'] = X_df.index.map(lambda t: returns_clean[t].mean())
+X_df['Volatility'] = X_df.index.map(lambda t: returns_clean[t].std())
+
+summary = X_df.groupby('Cluster')[['Mean Return', 'Volatility']].mean().round(4)
+st.dataframe(summary)
 
 # Show raw data option
 if st.sidebar.checkbox("Show Raw Returns Data"):
