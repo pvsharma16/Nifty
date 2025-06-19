@@ -49,8 +49,8 @@ missing = [t for t in nifty50_tickers if t not in valid_tickers]
 
 if missing:
     st.warning(f"Warning: Could not fetch data for these tickers: {', '.join(missing)}")
-if valid_tickers:
-    st.success(f"✅ Data successfully fetched for: {', '.join([t.replace('.NS', '') for t in valid_tickers])}")
+#if valid_tickers:
+#    st.success(f"✅ Data successfully fetched for: {', '.join([t.replace('.NS', '') for t in valid_tickers])}")
 
 # Calculate returns and clean
 returns = data.pct_change()
