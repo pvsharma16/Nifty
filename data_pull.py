@@ -95,6 +95,7 @@ pca_df = pd.DataFrame(X_pca, columns=['PCA1', 'PCA2'], index=X.index)
 pca_df['Cluster'] = labels
 pca_df['Ticker'] = pca_df.index.str.replace('.NS', '', regex=False)
 
+pca_df['Cluster'] = pca_df['Cluster'].astype(str)
 fig = px.scatter(
     pca_df,
     x='PCA1', y='PCA2',
