@@ -10,36 +10,43 @@ import seaborn as sns
 import io
 
 # Page config
-st.set_page_config(page_title="Nifty 50 Stock Clustering", layout="wide")
-st.title("📊 Nifty 50 Stock Clustering Dashboard")
+st.set_page_config(page_title="NSE Stock Clustering", layout="wide")
+st.title("📊 NSE Stock Clustering Dashboard")
 
-# Updated Nifty 50 ticker list (verified on Yahoo Finance)
-nifty50_tickers = [
-    'RELIANCE.NS', 'TCS.NS', 'INFY.NS', 'HDFCBANK.NS', 'ICICIBANK.NS',
-    'LT.NS', 'SBIN.NS', 'HINDUNILVR.NS', 'ITC.NS', 'BHARTIARTL.NS',
-    'ASIANPAINT.NS', 'AXISBANK.NS', 'KOTAKBANK.NS', 'SUNPHARMA.NS',
-    'MARUTI.NS', 'WIPRO.NS', 'HCLTECH.NS', 'NESTLEIND.NS', 'TECHM.NS',
-    'ULTRACEMCO.NS', 'TITAN.NS', 'NTPC.NS', 'ONGC.NS', 'JSWSTEEL.NS',
-    'COALINDIA.NS', 'POWERGRID.NS', 'BAJFINANCE.NS', 'BAJAJFINSV.NS',
-    'ADANIENT.NS', 'ADANIPORTS.NS', 'HDFCLIFE.NS', 'HEROMOTOCO.NS',
-    'CIPLA.NS', 'EICHERMOT.NS', 'GRASIM.NS', 'INDUSINDBK.NS',
-    'TATAMOTORS.NS', 'TATASTEEL.NS', 'DRREDDY.NS', 'SBILIFE.NS',
-    'M&M.NS', 'BAJAJ-AUTO.NS', 'HINDALCO.NS', 'APOLLOHOSP.NS',
-    'DABUR.NS', 'PIDILITIND.NS', 'HAVELLS.NS', 'ICICIGI.NS',
-    'CHOLAFIN.NS', 'TRENT.NS'
-]
+# Load stock metadata
+metadata_df = pd.read_csv("nse_fo_sample_template.csv")
 
 # Sidebar controls
 st.sidebar.header("Settings")
+stock_set = st.sidebar.selectbox("Stock Universe", ["Nifty 50", "F&O Stocks"])
 n_clusters = st.sidebar.slider("Number of Clusters", min_value=2, max_value=8, value=4)
 date_range = st.sidebar.date_input("Select Date Range", ["2024-01-01", "2025-06-01"])
 mode = st.sidebar.selectbox("Cluster by", ["Overall returns", "Day-of-week patterns"])
 
-# Download data with diagnostics
+# Optional filters
+selected_sector = st.sidebar.multiselect(
+    "Filter by Sector", options=metadata_df['Sector'].unique(), default=metadata_df['Sector'].unique()
+)
+selected_cap = st.sidebar.multiselect(
+    "Filter by Market Cap", options=metadata_df['MarketCap'].unique(), default=metadata_df['MarketCap'].unique()
+)
+
+# Apply filters
+filtered_df = metadata_df[
+    metadata_df['Sector'].isin(selected_sector) & metadata_df['MarketCap'].isin(selected_cap)
+]
+
+# Select tickers based on stock set
+if stock_set == "Nifty 50":
+    tickers = filtered_df['Ticker'].tolist()[:50]
+else:
+    tickers = filtered_df['Ticker'].tolist()
+
+# Download data
 with st.spinner("Fetching data from Yahoo Finance..."):
     try:
         raw_data = yf.download(
-            tickers=nifty50_tickers,
+            tickers=tickers,
             start=date_range[0],
             end=date_range[1],
             group_by='ticker',
@@ -48,7 +55,7 @@ with st.spinner("Fetching data from Yahoo Finance..."):
         )
         adj_close = pd.DataFrame({
             ticker: raw_data[ticker]['Close']
-            for ticker in nifty50_tickers
+            for ticker in tickers
             if ticker in raw_data and 'Close' in raw_data[ticker]
         })
         st.write("Sample of fetched Adjusted Close data:", adj_close.head(3))
@@ -61,7 +68,7 @@ if adj_close.empty:
     st.stop()
 
 valid_tickers = adj_close.columns.tolist()
-missing = [t for t in nifty50_tickers if t not in valid_tickers]
+missing = [t for t in tickers if t not in valid_tickers]
 if missing:
     st.warning(f"⚠️ Could not fetch data for: {', '.join(missing)}")
 if valid_tickers:
@@ -78,12 +85,10 @@ if mode == "Day-of-week patterns":
 else:
     X = returns_clean.T
 
-st.info(f"✅ {X.shape[0]} out of {len(nifty50_tickers)} stocks have usable return data.")
+st.info(f"✅ {X.shape[0]} out of {len(tickers)} stocks have usable return data.")
 
 if X.shape[0] <= n_clusters:
-    st.warning(
-        f"Only {X.shape[0]} clean stocks available, which is less than or equal to the number of clusters ({n_clusters})."
-    )
+    st.warning(f"Only {X.shape[0]} clean stocks available, which is less than or equal to the number of clusters ({n_clusters}).")
     st.info("Try reducing the number of clusters or extending the date range.")
     st.stop()
 
@@ -100,7 +105,7 @@ sns.scatterplot(x=X_pca[:, 0], y=X_pca[:, 1], hue=labels, palette='Set2', s=100,
 for i, ticker in enumerate(X.index):
     ax.text(X_pca[i, 0]+0.01, X_pca[i, 1], ticker.replace('.NS', ''), fontsize=8)
 
-ax.set_title("Nifty 50 Stock Clusters")
+ax.set_title("NSE Stock Clusters")
 ax.set_xlabel("PCA Component 1")
 ax.set_ylabel("PCA Component 2")
 ax.grid(True)
@@ -119,8 +124,9 @@ summary = X_df.groupby('Cluster').agg({
     'Cluster': 'count'
 }).rename(columns={'Cluster': 'Count'}).round(4)
 
-# Highlight best cluster (highest mean return)
+# Highlight best cluster
 best_cluster = summary['Mean Return'].idxmax()
+
 def highlight_best(s):
     is_best = s.name == best_cluster
     return ['background-color: #c6f6d5; font-weight: bold' if is_best else '' for _ in s]
@@ -128,14 +134,12 @@ def highlight_best(s):
 summary_style = summary.style.apply(highlight_best, axis=1)
 st.dataframe(summary_style)
 
-
-st.dataframe(summary_style)
-
 # Scatter plot of cluster means
 fig2, ax2 = plt.subplots()
 ax2.scatter(summary['Volatility'], summary['Mean Return'], c=summary.index, cmap='Set2', s=120)
 for i in summary.index:
-    ax2.text(summary.loc[i, 'Volatility']+0.0005, summary.loc[i, 'Mean Return'], f"Cluster {i}", fontsize=9)
+    label = f"🏆 Cluster {i}" if i == best_cluster else f"Cluster {i}"
+    ax2.text(summary.loc[i, 'Volatility']+0.0005, summary.loc[i, 'Mean Return'], label, fontsize=9)
 ax2.set_xlabel("Volatility")
 ax2.set_ylabel("Mean Return")
 ax2.set_title("📊 Cluster Centers: Mean Return vs. Volatility")
@@ -148,7 +152,7 @@ X_df.reset_index().rename(columns={'index': 'Ticker'}).to_csv(csv_buffer, index=
 st.download_button(
     label="📥 Download Clustered Stock Data as CSV",
     data=csv_buffer.getvalue(),
-    file_name="nifty50_clusters.csv",
+    file_name="nse_clusters.csv",
     mime="text/csv"
 )
 
