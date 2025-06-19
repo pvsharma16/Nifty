@@ -31,7 +31,7 @@ nifty50_tickers = [
 # Sidebar controls
 st.sidebar.header("Settings")
 n_clusters = st.sidebar.slider("Number of Clusters", min_value=2, max_value=8, value=4)
-date_range = st.sidebar.date_input("Select Date Range", ["2024-06-01", "2025-06-01"])
+date_range = st.sidebar.date_input("Select Date Range", ["2024-01-01", "2025-06-01"])
 
 # Download data with diagnostics
 with st.spinner("Fetching data from Yahoo Finance..."):
@@ -65,17 +65,23 @@ valid_tickers = adj_close.columns.tolist()
 missing = [t for t in nifty50_tickers if t not in valid_tickers]
 if missing:
     st.warning(f"⚠️ Could not fetch data for: {', '.join(missing)}")
-#if valid_tickers:
-#    st.success(f"✅ Data successfully fetched for: {', '.join([t.replace('.NS', '') for t in valid_tickers])}")
+if valid_tickers:
+    st.success(f"✅ Data successfully fetched for: {', '.join([t.replace('.NS', '') for t in valid_tickers])}")
 
 # Calculate returns and clean
 returns = adj_close.pct_change()
 returns_clean = returns.replace([np.inf, -np.inf], np.nan).dropna(axis=1, how='any').dropna(axis=0, how='any')
 X = returns_clean.T
 
+# Show how many valid stocks are available
+st.info(f"✅ {X.shape[0]} out of {len(nifty50_tickers)} stocks have usable return data.")
+
 # Check if enough data is available
-if X.shape[0] < 3:
-    st.error("Not enough clean stock data to cluster. Try a longer date range or fewer clusters.")
+if X.shape[0] <= n_clusters:
+    st.warning(
+        f"Only {X.shape[0]} clean stocks available, which is less than or equal to the number of clusters ({n_clusters})."
+    )
+    st.info("Try reducing the number of clusters or extending the date range.")
     st.stop()
 
 # Preprocessing
@@ -103,4 +109,4 @@ st.pyplot(fig)
 # Show raw data option
 if st.sidebar.checkbox("Show Raw Returns Data"):
     st.subheader("Daily Returns")
-    st.dat
+    st.dataframe(returns_clean.T.round(4))
