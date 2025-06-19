@@ -14,18 +14,7 @@ st.title("📊 Nifty 50 Stock Clustering Dashboard")
 
 # Updated Nifty 50 ticker list (verified on Yahoo Finance)
 nifty50_tickers = [
-    'RELIANCE.NS', 'TCS.NS', 'INFY.NS', 'HDFCBANK.NS', 'ICICIBANK.NS',
-    'LT.NS', 'SBIN.NS', 'HINDUNILVR.NS', 'ITC.NS', 'BHARTIARTL.NS',
-    'ASIANPAINT.NS', 'AXISBANK.NS', 'KOTAKBANK.NS', 'SUNPHARMA.NS',
-    'MARUTI.NS', 'WIPRO.NS', 'HCLTECH.NS', 'NESTLEIND.NS', 'TECHM.NS',
-    'ULTRACEMCO.NS', 'TITAN.NS', 'NTPC.NS', 'ONGC.NS', 'JSWSTEEL.NS',
-    'COALINDIA.NS', 'POWERGRID.NS', 'BAJFINANCE.NS', 'BAJAJFINSV.NS',
-    'ADANIENT.NS', 'ADANIPORTS.NS', 'HDFCLIFE.NS', 'HEROMOTOCO.NS',
-    'CIPLA.NS', 'EICHERMOT.NS', 'GRASIM.NS', 'INDUSINDBK.NS',
-    'TATAMOTORS.NS', 'TATASTEEL.NS', 'DRREDDY.NS', 'SBILIFE.NS',
-    'M&M.NS', 'BAJAJ-AUTO.NS', 'HINDALCO.NS', 'APOLLOHOSP.NS',
-    'DABUR.NS', 'PIDILITIND.NS', 'HAVELLS.NS', 'ICICIGI.NS',
-    'CHOLAFIN.NS', 'TRENT.NS'
+    'RELIANCE.NS', 'TCS.NS'
 ]
 
 # Sidebar controls
@@ -34,7 +23,7 @@ n_clusters = st.sidebar.slider("Number of Clusters", min_value=2, max_value=8, v
 date_range = st.sidebar.date_input("Select Date Range", ["2024-06-01", "2025-06-01"])
 
 # Download data
-raw_data = yf.download('TRENT.NS' & 'ICICIGI.NS', start=date_range[0], end=date_range[1])
+raw_data = yf.download(nifty50_tickers, start=date_range[0], end=date_range[1])
 
 # Check if 'Adj Close' exists
 #if 'Adj Close' not in raw_data.columns:
