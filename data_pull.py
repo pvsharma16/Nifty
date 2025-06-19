@@ -7,6 +7,7 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 import seaborn as sns
+import io
 
 # Page config
 st.set_page_config(page_title="Nifty 50 Stock Clustering", layout="wide")
@@ -106,6 +107,27 @@ X_df['Volatility'] = X_df.index.map(lambda t: returns_clean[t].std())
 
 summary = X_df.groupby('Cluster')[['Mean Return', 'Volatility']].mean().round(4)
 st.dataframe(summary)
+
+# Scatter plot of cluster means
+fig2, ax2 = plt.subplots()
+ax2.scatter(summary['Volatility'], summary['Mean Return'], c=summary.index, cmap='Set2', s=120)
+for i in summary.index:
+    ax2.text(summary.loc[i, 'Volatility']+0.0005, summary.loc[i, 'Mean Return'], f"Cluster {i}", fontsize=9)
+ax2.set_xlabel("Volatility")
+ax2.set_ylabel("Mean Return")
+ax2.set_title("📊 Cluster Centers: Mean Return vs. Volatility")
+ax2.grid(True)
+st.pyplot(fig2)
+
+# CSV download
+csv_buffer = io.StringIO()
+X_df.reset_index().rename(columns={'index': 'Ticker'}).to_csv(csv_buffer, index=False)
+st.download_button(
+    label="📥 Download Clustered Stock Data as CSV",
+    data=csv_buffer.getvalue(),
+    file_name="nifty50_clusters.csv",
+    mime="text/csv"
+)
 
 # Show raw data option
 if st.sidebar.checkbox("Show Raw Returns Data"):
