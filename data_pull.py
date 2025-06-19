@@ -33,11 +33,21 @@ n_clusters = st.sidebar.slider("Number of Clusters", min_value=2, max_value=8, v
 date_range = st.sidebar.date_input("Select Date Range", ["2024-06-01", "2025-06-01"])
 
 # Download data
-data = yf.download(nifty50_tickers, start=date_range[0], end=date_range[1])
-returns = data.pct_change().dropna()
+data = yf.download(nifty50_tickers, start=date_range[0], end=date_range[1])['Adj Close']
+returns = data.pct_change()
+
+# Clean data: remove inf and NaN
+returns_clean = returns.replace([np.inf, -np.inf], np.nan).dropna(axis=1, how='any').dropna(axis=0, how='any')
+
+# Transpose for clustering
+X = returns_clean.T
+
+# Check if enough data is available
+if X.shape[0] < 3:
+    st.error("Not enough clean stock data to cluster. Try a longer date range or fewer clusters.")
+    st.stop()
 
 # Preprocessing
-X = returns.T
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 pca = PCA(n_components=2)
@@ -62,4 +72,4 @@ st.pyplot(fig)
 # Show raw data option
 if st.sidebar.checkbox("Show Raw Returns Data"):
     st.subheader("Daily Returns")
-    st.dataframe(returns.T.round(4))
+    st.dataframe(returns_clean.T.round(4))
