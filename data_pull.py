@@ -58,7 +58,6 @@ with st.spinner("Fetching data from Yahoo Finance..."):
             for ticker in tickers
             if ticker in raw_data and 'Close' in raw_data[ticker]
         })
-        st.write("Sample of fetched Adjusted Close data:", adj_close.head(3))
     except Exception as e:
         st.error(f"❌ Error while downloading data: {e}")
         st.stop()
@@ -66,13 +65,6 @@ with st.spinner("Fetching data from Yahoo Finance..."):
 if adj_close.empty:
     st.error("No data could be retrieved for the selected date range. Try a broader range or different tickers.")
     st.stop()
-
-valid_tickers = adj_close.columns.tolist()
-missing = [t for t in tickers if t not in valid_tickers]
-if missing:
-    st.warning(f"⚠️ Could not fetch data for: {', '.join(missing)}")
-if valid_tickers:
-    st.success(f"✅ Data successfully fetched for: {', '.join([t.replace('.NS', '') for t in valid_tickers])}")
 
 returns = adj_close.pct_change()
 returns_clean = returns.replace([np.inf, -np.inf], np.nan).fillna(method='ffill').fillna(method='bfill')
