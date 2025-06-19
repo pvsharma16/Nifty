@@ -12,7 +12,7 @@ import seaborn as sns
 st.set_page_config(page_title="Nifty 50 Stock Clustering", layout="wide")
 st.title("📊 Nifty 50 Stock Clustering Dashboard")
 
-# Nifty 50 symbols (Yahoo Finance format)
+# Updated Nifty 50 ticker list (verified on Yahoo Finance)
 nifty50_tickers = [
     'RELIANCE.NS', 'TCS.NS', 'INFY.NS', 'HDFCBANK.NS', 'ICICIBANK.NS',
     'LT.NS', 'SBIN.NS', 'HINDUNILVR.NS', 'ITC.NS', 'BHARTIARTL.NS',
@@ -24,7 +24,8 @@ nifty50_tickers = [
     'CIPLA.NS', 'EICHERMOT.NS', 'GRASIM.NS', 'INDUSINDBK.NS',
     'TATAMOTORS.NS', 'TATASTEEL.NS', 'DRREDDY.NS', 'SBILIFE.NS',
     'M&M.NS', 'BAJAJ-AUTO.NS', 'HINDALCO.NS', 'APOLLOHOSP.NS',
-    'SRF.NS', 'DMART.NS', 'IRCTC.NS', 'BANKBARODA.NS', 'TVSMOTOR.NS'
+    'DABUR.NS', 'PIDILITIND.NS', 'HAVELLS.NS', 'ICICIGI.NS',
+    'CHOLAFIN.NS', 'TRENT.NS'
 ]
 
 # Sidebar controls
@@ -40,16 +41,19 @@ raw_data = yf.download(nifty50_tickers, start=date_range[0], end=date_range[1])
 #    st.error("Failed to retrieve valid stock data. Please try again or adjust the date range.")
 #    st.stop()
 
-#data = raw_data['Adj Close']
+data = raw_data #['Adj Close']
 
-# Log missing tickers
-valid_tickers = raw_data.columns.tolist()
+# Log fetched and missing tickers
+valid_tickers = data.columns.tolist()
 missing = [t for t in nifty50_tickers if t not in valid_tickers]
+
 if missing:
     st.warning(f"Warning: Could not fetch data for these tickers: {', '.join(missing)}")
+if valid_tickers:
+    st.success(f"✅ Data successfully fetched for: {', '.join([t.replace('.NS', '') for t in valid_tickers])}")
 
 # Calculate returns and clean
-returns = raw_data.pct_change()
+returns = data.pct_change()
 returns_clean = returns.replace([np.inf, -np.inf], np.nan).dropna(axis=1, how='any').dropna(axis=0, how='any')
 X = returns_clean.T
 
