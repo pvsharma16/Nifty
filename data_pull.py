@@ -20,7 +20,7 @@ nifty50_tickers = [
 # Sidebar controls
 st.sidebar.header("Settings")
 n_clusters = st.sidebar.slider("Number of Clusters", min_value=2, max_value=8, value=4)
-date_range = st.sidebar.date_input("Select Date Range", ["2024-06-01", "2025-06-01"])
+date_range = st.sidebar.date_input("Select Date Range", ["2025-05-10", "2025-06-18"])
 
 # Download data
 raw_data = yf.download(nifty50_tickers, start=date_range[0], end=date_range[1])
