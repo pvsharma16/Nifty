@@ -34,9 +34,9 @@ date_range = st.sidebar.date_input("Select Date Range", ["2024-06-01", "2025-06-
 raw_data = yf.download(nifty50_tickers, start=date_range[0], end=date_range[1])
 
 # Check if 'Adj Close' exists
-if 'Adj Close' not in raw_data.columns:
-    st.error("Failed to retrieve valid stock data. Please try again or adjust the date range.")
-    st.stop()
+#if 'Adj Close' not in raw_data.columns:
+#    st.error("Failed to retrieve valid stock data. Please try again or adjust the date range.")
+#    st.stop()
 
 #data = raw_data['Adj Close']
 
