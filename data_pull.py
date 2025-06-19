@@ -118,7 +118,12 @@ summary = X_df.groupby('Cluster').agg({
     'Volatility': 'mean',
     'Cluster': 'count'
 }).rename(columns={'Cluster': 'Count'}).round(4)
-st.dataframe(summary)
+
+# Highlight best cluster (highest mean return)
+best_cluster = summary['Mean Return'].idxmax()
+summary_style = summary.style.highlight_rows(subset=['Mean Return'], props="font-weight: bold; background-color: #c6f6d5", axis=0, idx=best_cluster)
+
+st.dataframe(summary_style)
 
 # Scatter plot of cluster means
 fig2, ax2 = plt.subplots()
