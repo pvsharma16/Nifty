@@ -70,7 +70,7 @@ if valid_tickers:
 
 # Calculate returns and clean
 returns = adj_close.pct_change()
-returns_clean = returns.replace([np.inf, -np.inf], np.nan).dropna(axis=1, how='any').dropna(axis=0, how='any')
+returns_clean = returns.replace([np.inf, -np.inf], np.nan).fillna(method='ffill').fillna(method='bfill')
 X = returns_clean.T
 
 # Show how many valid stocks are available
