@@ -101,7 +101,7 @@ fig = px.scatter(
     color='Cluster',
     hover_data=['Ticker'],
     title='📊 Interactive NSE Stock Clusters',
-    color_continuous_scale='amp'
+    color_discrete_sequence=px.colors.qualitative.Set2
 )
 st.plotly_chart(fig, use_container_width=True)
 
