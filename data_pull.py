@@ -121,7 +121,13 @@ summary = X_df.groupby('Cluster').agg({
 
 # Highlight best cluster (highest mean return)
 best_cluster = summary['Mean Return'].idxmax()
-summary_style = summary.style.highlight_rows(subset=['Mean Return'], props="font-weight: bold; background-color: #c6f6d5", axis=0, idx=best_cluster)
+def highlight_best(s):
+    is_best = s.name == best_cluster
+    return ['background-color: #c6f6d5; font-weight: bold' if is_best else '' for _ in s]
+
+summary_style = summary.style.apply(highlight_best, axis=1)
+st.dataframe(summary_style)
+
 
 st.dataframe(summary_style)
 
