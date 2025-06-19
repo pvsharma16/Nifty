@@ -33,6 +33,7 @@ nifty50_tickers = [
 st.sidebar.header("Settings")
 n_clusters = st.sidebar.slider("Number of Clusters", min_value=2, max_value=8, value=4)
 date_range = st.sidebar.date_input("Select Date Range", ["2024-01-01", "2025-06-01"])
+mode = st.sidebar.selectbox("Cluster by", ["Overall returns", "Day-of-week patterns"])
 
 # Download data with diagnostics
 with st.spinner("Fetching data from Yahoo Finance..."):
@@ -68,7 +69,14 @@ if valid_tickers:
 
 returns = adj_close.pct_change()
 returns_clean = returns.replace([np.inf, -np.inf], np.nan).fillna(method='ffill').fillna(method='bfill')
-X = returns_clean.T
+
+if mode == "Day-of-week patterns":
+    returns_clean['Day'] = returns_clean.index.day_name()
+    weekday_avg = returns_clean.groupby('Day').mean().T
+    weekday_avg = weekday_avg[['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']]
+    X = weekday_avg
+else:
+    X = returns_clean.T
 
 st.info(f"✅ {X.shape[0]} out of {len(nifty50_tickers)} stocks have usable return data.")
 
@@ -92,20 +100,24 @@ sns.scatterplot(x=X_pca[:, 0], y=X_pca[:, 1], hue=labels, palette='Set2', s=100,
 for i, ticker in enumerate(X.index):
     ax.text(X_pca[i, 0]+0.01, X_pca[i, 1], ticker.replace('.NS', ''), fontsize=8)
 
-ax.set_title("Nifty 50 Stock Clusters Based on Daily Returns")
+ax.set_title("Nifty 50 Stock Clusters")
 ax.set_xlabel("PCA Component 1")
 ax.set_ylabel("PCA Component 2")
 ax.grid(True)
 st.pyplot(fig)
 
-# Cluster-level mean return and volatility
-st.subheader("📈 Cluster Averages: Return & Volatility")
+# Cluster-level summary
+st.subheader("📈 Cluster Averages: Return, Volatility & Count")
 X_df = pd.DataFrame(X_scaled, index=X.index)
 X_df['Cluster'] = labels
 X_df['Mean Return'] = X_df.index.map(lambda t: returns_clean[t].mean())
 X_df['Volatility'] = X_df.index.map(lambda t: returns_clean[t].std())
 
-summary = X_df.groupby('Cluster')[['Mean Return', 'Volatility']].mean().round(4)
+summary = X_df.groupby('Cluster').agg({
+    'Mean Return': 'mean',
+    'Volatility': 'mean',
+    'Cluster': 'count'
+}).rename(columns={'Cluster': 'Count'}).round(4)
 st.dataframe(summary)
 
 # Scatter plot of cluster means
